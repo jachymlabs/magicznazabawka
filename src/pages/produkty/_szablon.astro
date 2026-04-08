@@ -1,0 +1,219 @@
+---
+/**
+ * SZABLON STRONY PRODUKTOWEJ
+ *
+ * Jak uzywac:
+ * 1. Skopiuj ten plik: cp _szablon.astro nazwa-produktu.astro
+ * 2. Zmien SLUG ponizej na slug produktu z Vendure
+ * 3. Zmien metaDescription
+ * 4. Dodaj/usun sekcje opisu pod komentarzem "CUSTOM SEKCJE"
+ * 5. Commit + push — Vercel automatycznie deployuje
+ *
+ * Dokumentacja: docs/tworzenie-stron-produktowych.md
+ */
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import ProductDetail from '@/components/ProductDetail.astro';
+import StickyATCBar from '@/components/StickyATCBar';
+import FinalCTA from '@/components/FinalCTA.astro';
+import FAQAccordion from '@/components/FAQAccordion';
+
+// Sekcje — importuj tylko te ktore uzywasz
+import FeaturesGrid from '@/components/sections/FeaturesGrid.astro';
+import ComparisonTable from '@/components/sections/ComparisonTable.astro';
+import TestimonialQuote from '@/components/sections/TestimonialQuote.astro';
+import StatsBar from '@/components/sections/StatsBar.astro';
+import ReviewsCarousel from '@/components/sections/ReviewsCarousel.astro';
+import BrandStory from '@/components/sections/BrandStory.astro';
+import HeroSection from '@/components/sections/HeroSection.astro';
+import BeforeAfter from '@/components/sections/BeforeAfter.astro';
+import CustomHtml from '@/components/sections/CustomHtml.astro';
+
+import { shopApi, shopApiRaw, redirectWithToken } from '@/lib/vendure';
+import { GET_PRODUCT_DETAIL } from '@/lib/queries';
+import { ADD_TO_CART } from '@/lib/mutations';
+import { buildAssetUrl } from '@/lib/utils';
+import type { VendureVariant } from '@/types/vendure';
+
+// ╔══════════════════════════════════════════════╗
+// ║  ZMIEN TE WARTOSCI                           ║
+// ╚══════════════════════════════════════════════╝
+
+const SLUG = 'twoj-slug-produktu';  // slug z Vendure — musi byc identyczny z nazwa pliku!
+
+const metaDescription = 'Tutaj wpisz opis produktu do Google (max 160 znakow). Powinien zachecac do klikniecia.';
+
+// ╔══════════════════════════════════════════════╗
+// ║  PONIZEJ NIE ZMIENIAJ (boilerplate code)     ║
+// ╚══════════════════════════════════════════════╝
+
+// POST handler — obsluga dodawania do koszyka (no-JS fallback)
+if (Astro.request.method === 'POST') {
+  try {
+    const formData = await Astro.request.formData();
+    const variantId = formData.get('variantId') as string;
+    const rawQty = parseInt(formData.get('quantity') as string || '1', 10);
+    const quantity = Math.max(1, Math.min(99, isNaN(rawQty) ? 1 : rawQty));
+    if (variantId) {
+      const result = await shopApiRaw<any>(ADD_TO_CART, { variantId, quantity }, Astro.request);
+      return redirectWithToken('/koszyk', result.authToken);
+    }
+  } catch {}
+}
+
+// Pobierz produkt z Vendure
+const data = await shopApi<any>(GET_PRODUCT_DETAIL, { slug: SLUG }, Astro.request);
+const product = data.product;
+if (!product) return Astro.redirect('/');
+
+const lowestPrice = product.variants?.length
+  ? Math.min(...product.variants.map((v: VendureVariant) => v.priceWithTax))
+  : 0;
+
+const ogImageUrl = product?.featuredAsset?.preview
+  ? buildAssetUrl(product.featuredAsset.preview, 'large')
+  : undefined;
+---
+
+<BaseLayout
+  title={`${product.name} — Magiczna Zabawka`}
+  description={metaDescription}
+  ogImage={ogImageUrl}
+  ogType="product"
+>
+
+  {/* ═══════════════════════════════════════════════════════
+      KARTA PRODUKTU — stala, automatyczna (dane z Vendure)
+      Zdjecie, nazwa, cena, warianty, "Dodaj do koszyka"
+      NIE ZMIENIAJ — to samo na kazdym produkcie
+      ═══════════════════════════════════════════════════════ */}
+  <ProductDetail product={product} />
+
+  {/* Sticky ATC bar — pojawia sie gdy scrollujesz ponizej przycisku "Dodaj do koszyka" */}
+  {product.variants[0] && (
+    <StickyATCBar
+      client:idle
+      productName={product.name}
+      price={lowestPrice}
+      variantId={product.variants[0].id}
+    />
+  )}
+
+  {/* ═══════════════════════════════════════════════════════
+      CUSTOM SEKCJE — tutaj dodajesz opis produktu
+      Ukladaj sekcje jak klocki — w dowolnej kolejnosci
+      Dokumentacja: docs/tworzenie-stron-produktowych.md
+      ═══════════════════════════════════════════════════════ */}
+
+  {/* --- PRZYKLAD: StatsBar --- */}
+  {/* <StatsBar
+    theme="dark"
+    stats={[
+      { value: '500+', label: 'Sprzedanych sztuk' },
+      { value: '4.9/5', label: 'Srednia ocena' },
+      { value: '24h', label: 'Wysylka InPost' },
+      { value: '30 dni', label: 'Darmowy zwrot' },
+    ]}
+  /> */}
+
+  {/* --- PRZYKLAD: FeaturesGrid (cechy produktu) --- */}
+  {/* <FeaturesGrid
+    headline="Dlaczego warto?"
+    theme="accent"
+    columns={3}
+    features={[
+      { icon: 'heart', title: 'Cecha 1', description: 'Opis cechy produktu' },
+      { icon: 'shield-check', title: 'Cecha 2', description: 'Opis cechy produktu' },
+      { icon: 'truck', title: 'Cecha 3', description: 'Opis cechy produktu' },
+    ]}
+  /> */}
+
+  {/* --- PRZYKLAD: ComparisonTable --- */}
+  {/* <ComparisonTable
+    headline="Nasz produkt vs konkurencja"
+    ourBrand="Nasz produkt"
+    competitor="Konkurencja"
+    rows={[
+      { feature: 'Cecha 1', us: true, them: false },
+      { feature: 'Cecha 2', us: true, them: false },
+      { feature: 'Cecha 3', us: true, them: true },
+    ]}
+  /> */}
+
+  {/* --- PRZYKLAD: TestimonialQuote --- */}
+  {/* <TestimonialQuote
+    theme="accent"
+    quote="Opinia zadowolonego klienta..."
+    authorName="Imie z Miasta"
+    authorTitle="Weryfikowany zakup"
+    rating={5}
+  /> */}
+
+  {/* --- PRZYKLAD: ReviewsCarousel --- */}
+  {/* <ReviewsCarousel
+    headline="Opinie klientow"
+    reviews={[
+      { body: 'Opinia 1...', author: 'Jan z Krakowa', rating: 5 },
+      { body: 'Opinia 2...', author: 'Anna z Gdanska', rating: 5 },
+      { body: 'Opinia 3...', author: 'Kasia z Wroclawia', rating: 4 },
+    ]}
+  /> */}
+
+  {/* --- PRZYKLAD: FAQAccordion --- */}
+  {/* <FAQAccordion
+    client:visible
+    title="Czesto zadawane pytania"
+    items={[
+      { question: 'Pytanie 1?', answer: 'Odpowiedz 1.' },
+      { question: 'Pytanie 2?', answer: 'Odpowiedz 2.' },
+      { question: 'Pytanie 3?', answer: 'Odpowiedz 3.' },
+    ]}
+  /> */}
+
+  {/* ═══════════════════════════════════════════════════════
+      FINAL CTA — zawsze na koncu
+      ═══════════════════════════════════════════════════════ */}
+  <FinalCTA
+    productName={product.name}
+    price={lowestPrice}
+    variantId={product.variants[0]?.id}
+    image={product.featuredAsset?.preview}
+    urgencyText="Zamow do 14:00 — wysylka dzis!"
+  />
+
+  {/* ═══════════════════════════════════════════════════════
+      PONIZEJ NIE ZMIENIAJ — obsluga koszyka (JS)
+      ═══════════════════════════════════════════════════════ */}
+  <script>
+    function initAddToCartForm() {
+      const form = document.querySelector('form[method="POST"]') as HTMLFormElement | null;
+      if (!form) return;
+      const btn = form.querySelector('button[type="submit"]') as HTMLButtonElement | null;
+      if (!btn) return;
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const formData = new FormData(form);
+        const variantId = formData.get('variantId') as string;
+        const quantity = parseInt(formData.get('quantity') as string || '1', 10);
+        if (!variantId) return;
+        btn.disabled = true;
+        const originalText = btn.textContent;
+        btn.textContent = 'Dodawanie...';
+        try {
+          const res = await fetch('/api/cart', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'same-origin',
+            body: JSON.stringify({ variantId, quantity }),
+          });
+          if (res.ok) {
+            const data = await res.json();
+            window.dispatchEvent(new CustomEvent('cart-updated', { detail: data.order }));
+          } else { form.submit(); return; }
+        } catch { form.submit(); return; }
+        btn.disabled = false;
+        btn.textContent = originalText;
+      });
+    }
+    initAddToCartForm();
+  </script>
+</BaseLayout>
