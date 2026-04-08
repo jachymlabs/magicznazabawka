@@ -5,7 +5,7 @@
  * 1. PUBLIC_META_PIXEL_ID is set
  * 2. cookie_consent=accepted (checked client-side)
  */
-const pixelId = import.meta.env.PUBLIC_META_PIXEL_ID;
+const pixelId = (import.meta.env.PUBLIC_META_PIXEL_ID || '').trim();
 ---
 
 {pixelId && (

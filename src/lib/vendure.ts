@@ -1,6 +1,6 @@
 // process.env for runtime resolution (not baked at build time)
-const API_URL = process.env.VENDURE_API_URL || import.meta.env.VENDURE_API_URL || 'http://localhost:3000/shop-api';
-const CHANNEL_TOKEN = process.env.VENDURE_CHANNEL_TOKEN || import.meta.env.VENDURE_CHANNEL_TOKEN || '';
+const API_URL = (process.env.VENDURE_API_URL || import.meta.env.VENDURE_API_URL || 'http://localhost:3000/shop-api').trim();
+const CHANNEL_TOKEN = (process.env.VENDURE_CHANNEL_TOKEN || import.meta.env.VENDURE_CHANNEL_TOKEN || '').trim();
 const AUTH_TOKEN_COOKIE = 'vendure-auth-token';
 
 /** Cookie name exported for use by API route helpers (vendure-api.ts). */

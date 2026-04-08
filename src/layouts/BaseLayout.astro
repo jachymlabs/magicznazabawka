@@ -37,7 +37,7 @@ const {
 const siteName = config.storeName;
 const fullTitle = title ? `${title} | ${siteName}` : `${siteName} — Sklep internetowy`;
 const canonicalUrl = canonical || Astro.url.href;
-const siteUrl = import.meta.env.PUBLIC_SITE_URL || 'http://localhost:4321';
+const siteUrl = (import.meta.env.PUBLIC_SITE_URL || 'http://localhost:4321').trim();
 const ogImageUrl = ogImage ? (ogImage.startsWith('http') ? ogImage : `${siteUrl}${ogImage}`) : undefined;
 const freeShippingThreshold = config.freeShippingThreshold;
 ---

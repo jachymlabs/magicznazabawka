@@ -50,7 +50,7 @@ export function buildResponse(body: unknown, newToken?: string, status = 200): R
     'Cache-Control': 'no-store, private',
   });
   if (newToken) {
-    const isProduction = !process.env.VENDURE_API_URL?.includes('localhost');
+    const isProduction = !(process.env.VENDURE_API_URL || '').trim().includes('localhost');
     const cookieDomain = (process.env.PUBLIC_COOKIE_DOMAIN || '').trim();
     headers.append(
       'Set-Cookie',

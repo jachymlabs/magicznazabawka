@@ -40,8 +40,8 @@ export async function sha256Hash(value: string): Promise<string> {
  * Silently fails if credentials are not configured.
  */
 export async function sendCAPIEvent(event: CAPIEvent): Promise<void> {
-  const token = import.meta.env.META_CAPI_ACCESS_TOKEN;
-  const datasetId = import.meta.env.META_DATASET_ID;
+  const token = (import.meta.env.META_CAPI_ACCESS_TOKEN || '').trim();
+  const datasetId = (import.meta.env.META_DATASET_ID || '').trim();
 
   if (!token || !datasetId) return;
 
