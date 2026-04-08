@@ -32,7 +32,7 @@ let globalError = '';
 // Origin check as secondary layer — compare against PUBLIC_SITE_URL (not Astro.url which is localhost behind proxy).
 if (Astro.request.method === 'POST') {
   const origin = Astro.request.headers.get('origin');
-  const allowedOrigin = import.meta.env.PUBLIC_SITE_URL || process.env.PUBLIC_SITE_URL || '';
+  const allowedOrigin = (import.meta.env.PUBLIC_SITE_URL || process.env.PUBLIC_SITE_URL || '').trim();
   if (origin) {
     // If we have allowedOrigin configured — validate. If not — reject in production.
     if (allowedOrigin && !origin.startsWith(allowedOrigin)) {
