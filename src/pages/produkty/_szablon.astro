@@ -2,51 +2,36 @@
 /**
  * SZABLON STRONY PRODUKTOWEJ
  *
- * Jak uzywac:
- * 1. Skopiuj ten plik: cp _szablon.astro nazwa-produktu.astro
- * 2. Zmien SLUG ponizej na slug produktu z Vendure
- * 3. Zmien metaDescription
- * 4. Dodaj/usun sekcje opisu pod komentarzem "CUSTOM SEKCJE"
- * 5. Commit + push — Vercel automatycznie deployuje
+ * 1. Skopiuj: cp _szablon.astro nazwa-produktu.astro
+ * 2. Zmien SLUG i metaDescription
+ * 3. Napisz opis produktu pod komentarzem "OPIS PRODUKTU"
+ * 4. npm run dev → testuj na localhost:4321
+ * 5. git add + commit + push → auto-deploy
  *
- * Dokumentacja: docs/tworzenie-stron-produktowych.md
+ * GORA: ProductDetail — stala karta (zdjecie, cena, koszyk). Nie ruszaj.
+ * DOL: Twoj custom opis — pisz w HTML + Tailwind jak chcesz.
  */
 import BaseLayout from '@/layouts/BaseLayout.astro';
 import ProductDetail from '@/components/ProductDetail.astro';
 import StickyATCBar from '@/components/StickyATCBar';
-import FinalCTA from '@/components/FinalCTA.astro';
-import FAQAccordion from '@/components/FAQAccordion';
-
-// Sekcje — importuj tylko te ktore uzywasz
-import FeaturesGrid from '@/components/sections/FeaturesGrid.astro';
-import ComparisonTable from '@/components/sections/ComparisonTable.astro';
-import TestimonialQuote from '@/components/sections/TestimonialQuote.astro';
-import StatsBar from '@/components/sections/StatsBar.astro';
-import ReviewsCarousel from '@/components/sections/ReviewsCarousel.astro';
-import BrandStory from '@/components/sections/BrandStory.astro';
-import HeroSection from '@/components/sections/HeroSection.astro';
-import BeforeAfter from '@/components/sections/BeforeAfter.astro';
-import CustomHtml from '@/components/sections/CustomHtml.astro';
-
 import { shopApi, shopApiRaw, redirectWithToken } from '@/lib/vendure';
 import { GET_PRODUCT_DETAIL } from '@/lib/queries';
 import { ADD_TO_CART } from '@/lib/mutations';
 import { buildAssetUrl } from '@/lib/utils';
 import type { VendureVariant } from '@/types/vendure';
 
-// ╔══════════════════════════════════════════════╗
-// ║  ZMIEN TE WARTOSCI                           ║
-// ╚══════════════════════════════════════════════╝
+// ══════════════════════════════════════
+//  ZMIEN TE 2 RZECZY:
+// ══════════════════════════════════════
 
-const SLUG = 'twoj-slug-produktu';  // slug z Vendure — musi byc identyczny z nazwa pliku!
+const SLUG = 'twoj-slug-produktu';
 
-const metaDescription = 'Tutaj wpisz opis produktu do Google (max 160 znakow). Powinien zachecac do klikniecia.';
+const metaDescription = 'Opis do Google, max 160 znakow.';
 
-// ╔══════════════════════════════════════════════╗
-// ║  PONIZEJ NIE ZMIENIAJ (boilerplate code)     ║
-// ╚══════════════════════════════════════════════╝
+// ══════════════════════════════════════
+//  PONIZEJ NIE RUSZAJ
+// ══════════════════════════════════════
 
-// POST handler — obsluga dodawania do koszyka (no-JS fallback)
 if (Astro.request.method === 'POST') {
   try {
     const formData = await Astro.request.formData();
@@ -60,7 +45,6 @@ if (Astro.request.method === 'POST') {
   } catch {}
 }
 
-// Pobierz produkt z Vendure
 const data = await shopApi<any>(GET_PRODUCT_DETAIL, { slug: SLUG }, Astro.request);
 const product = data.product;
 if (!product) return Astro.redirect('/');
@@ -80,15 +64,9 @@ const ogImageUrl = product?.featuredAsset?.preview
   ogImage={ogImageUrl}
   ogType="product"
 >
-
-  {/* ═══════════════════════════════════════════════════════
-      KARTA PRODUKTU — stala, automatyczna (dane z Vendure)
-      Zdjecie, nazwa, cena, warianty, "Dodaj do koszyka"
-      NIE ZMIENIAJ — to samo na kazdym produkcie
-      ═══════════════════════════════════════════════════════ */}
+  {/* KARTA PRODUKTU — zdjecie, cena, warianty, "Dodaj do koszyka" */}
   <ProductDetail product={product} />
 
-  {/* Sticky ATC bar — pojawia sie gdy scrollujesz ponizej przycisku "Dodaj do koszyka" */}
   {product.variants[0] && (
     <StickyATCBar
       client:idle
@@ -98,91 +76,18 @@ const ogImageUrl = product?.featuredAsset?.preview
     />
   )}
 
-  {/* ═══════════════════════════════════════════════════════
-      CUSTOM SEKCJE — tutaj dodajesz opis produktu
-      Ukladaj sekcje jak klocki — w dowolnej kolejnosci
-      Dokumentacja: docs/tworzenie-stron-produktowych.md
-      ═══════════════════════════════════════════════════════ */}
+  {/* ══════════════════════════════════════
+      OPIS PRODUKTU — pisz tutaj
+      HTML + Tailwind, dowolna struktura
+      ══════════════════════════════════════ */}
 
-  {/* --- PRZYKLAD: StatsBar --- */}
-  {/* <StatsBar
-    theme="dark"
-    stats={[
-      { value: '500+', label: 'Sprzedanych sztuk' },
-      { value: '4.9/5', label: 'Srednia ocena' },
-      { value: '24h', label: 'Wysylka InPost' },
-      { value: '30 dni', label: 'Darmowy zwrot' },
-    ]}
-  /> */}
 
-  {/* --- PRZYKLAD: FeaturesGrid (cechy produktu) --- */}
-  {/* <FeaturesGrid
-    headline="Dlaczego warto?"
-    theme="accent"
-    columns={3}
-    features={[
-      { icon: 'heart', title: 'Cecha 1', description: 'Opis cechy produktu' },
-      { icon: 'shield-check', title: 'Cecha 2', description: 'Opis cechy produktu' },
-      { icon: 'truck', title: 'Cecha 3', description: 'Opis cechy produktu' },
-    ]}
-  /> */}
 
-  {/* --- PRZYKLAD: ComparisonTable --- */}
-  {/* <ComparisonTable
-    headline="Nasz produkt vs konkurencja"
-    ourBrand="Nasz produkt"
-    competitor="Konkurencja"
-    rows={[
-      { feature: 'Cecha 1', us: true, them: false },
-      { feature: 'Cecha 2', us: true, them: false },
-      { feature: 'Cecha 3', us: true, them: true },
-    ]}
-  /> */}
+  {/* ══════════════════════════════════════
+      KONIEC OPISU
+      ══════════════════════════════════════ */}
 
-  {/* --- PRZYKLAD: TestimonialQuote --- */}
-  {/* <TestimonialQuote
-    theme="accent"
-    quote="Opinia zadowolonego klienta..."
-    authorName="Imie z Miasta"
-    authorTitle="Weryfikowany zakup"
-    rating={5}
-  /> */}
-
-  {/* --- PRZYKLAD: ReviewsCarousel --- */}
-  {/* <ReviewsCarousel
-    headline="Opinie klientow"
-    reviews={[
-      { body: 'Opinia 1...', author: 'Jan z Krakowa', rating: 5 },
-      { body: 'Opinia 2...', author: 'Anna z Gdanska', rating: 5 },
-      { body: 'Opinia 3...', author: 'Kasia z Wroclawia', rating: 4 },
-    ]}
-  /> */}
-
-  {/* --- PRZYKLAD: FAQAccordion --- */}
-  {/* <FAQAccordion
-    client:visible
-    title="Czesto zadawane pytania"
-    items={[
-      { question: 'Pytanie 1?', answer: 'Odpowiedz 1.' },
-      { question: 'Pytanie 2?', answer: 'Odpowiedz 2.' },
-      { question: 'Pytanie 3?', answer: 'Odpowiedz 3.' },
-    ]}
-  /> */}
-
-  {/* ═══════════════════════════════════════════════════════
-      FINAL CTA — zawsze na koncu
-      ═══════════════════════════════════════════════════════ */}
-  <FinalCTA
-    productName={product.name}
-    price={lowestPrice}
-    variantId={product.variants[0]?.id}
-    image={product.featuredAsset?.preview}
-    urgencyText="Zamow do 14:00 — wysylka dzis!"
-  />
-
-  {/* ═══════════════════════════════════════════════════════
-      PONIZEJ NIE ZMIENIAJ — obsluga koszyka (JS)
-      ═══════════════════════════════════════════════════════ */}
+  {/* Obsluga koszyka — nie ruszaj */}
   <script>
     function initAddToCartForm() {
       const form = document.querySelector('form[method="POST"]') as HTMLFormElement | null;
