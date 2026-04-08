@@ -99,7 +99,7 @@ function buildAuthCookie(authToken: string): string {
   const maxAge = 60 * 60 * 24 * 365;
   const isProduction = !API_URL.includes('localhost');
   const secure = isProduction ? ' Secure;' : '';
-  const cookieDomain = process.env.PUBLIC_COOKIE_DOMAIN || import.meta.env.PUBLIC_COOKIE_DOMAIN || '';
+  const cookieDomain = (process.env.PUBLIC_COOKIE_DOMAIN || import.meta.env.PUBLIC_COOKIE_DOMAIN || '').trim();
   const domain = isProduction && cookieDomain ? ` Domain=${cookieDomain};` : '';
   return `${AUTH_TOKEN_COOKIE}=${authToken}; Path=/; HttpOnly; SameSite=Lax;${secure}${domain} Max-Age=${maxAge}`;
 }

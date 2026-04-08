@@ -51,9 +51,10 @@ export function buildResponse(body: unknown, newToken?: string, status = 200): R
   });
   if (newToken) {
     const isProduction = !process.env.VENDURE_API_URL?.includes('localhost');
+    const cookieDomain = (process.env.PUBLIC_COOKIE_DOMAIN || '').trim();
     headers.append(
       'Set-Cookie',
-      `${AUTH_COOKIE}=${newToken}; Path=/; HttpOnly; SameSite=Lax;${isProduction ? ' Secure;' : ''}${isProduction && process.env.PUBLIC_COOKIE_DOMAIN ? ` Domain=${process.env.PUBLIC_COOKIE_DOMAIN};` : ''} Max-Age=31536000`,
+      `${AUTH_COOKIE}=${newToken}; Path=/; HttpOnly; SameSite=Lax;${isProduction ? ' Secure;' : ''}${isProduction && cookieDomain ? ` Domain=${cookieDomain};` : ''} Max-Age=31536000`,
     );
   }
   return new Response(JSON.stringify(body), { status, headers });
