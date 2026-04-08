@@ -72,16 +72,19 @@ Automatyczna dla kazdego produktu. Dane z Vendure:
 
 Pisany recznie per produkt w HTML + Tailwind. Kazdy produkt moze miec inny opis.
 
-## Tworzenie strony produktowej — krok po kroku
+## Dodawanie produktu + tworzenie strony — pelny flow
 
-### 1. Produkt musi istniec w Vendure
+### 1. Dodaj produkt w Vendure
 
-W dashboardzie (vendure.jachymlabs.pl/admin):
-- Dodaj produkt: nazwa, cena, zdjecia, warianty
-- Ustaw slug (np. `pluszak-panda`) — to bedzie URL
-- Przypisz do channela `magicznazabawka`
+Szczegolowa instrukcja: **[docs/dodawanie-produktow.md](docs/dodawanie-produktow.md)**
 
-Po dodaniu produkt automatycznie dziala pod `/produkty/pluszak-panda` (podstawowa strona z Vendure).
+Skrot:
+1. Vendure Dashboard > Catalog > Products > Create
+2. Nazwa, slug (np. `pluszak-panda`), zdjecia, cena (w GROSZACH!), stock
+3. Przypisz do channela `magicznazabawka`
+4. Zapisz
+
+Produkt od razu dziala pod `/produkty/pluszak-panda` (podstawowa strona z Vendure).
 
 ### 2. Skopiuj szablon
 
@@ -250,7 +253,8 @@ src/
 ├── styles/global.css
 ├── types/
 └── docs/
-    └── tworzenie-stron-produktowych.md  ← Pelna dokumentacja
+    ├── dodawanie-produktow.md           ← Jak dodawac produkty w Vendure
+    └── tworzenie-stron-produktowych.md  ← Jak tworzyc custom strony
 ```
 
 ## Dokumentacja

@@ -40,6 +40,10 @@ Kazdy produkt ma dwie warstwy:
 
 Fallback — automatyczna strona dla produktow bez custom opisu. Dane z Vendure. Nie ruszaj.
 
+## Wazne
+
+- **Ceny w Vendure sa w GROSZACH** — 7900 = 79 zl, 12500 = 125 zl
+
 ## Zasady
 
 - **Branding/dane firmy** — TYLKO przez Vendure Dashboard, nigdy hardcode w kodzie

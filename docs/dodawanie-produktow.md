@@ -31,17 +31,18 @@ Formaty: JPG, PNG, WebP. Zalecany rozmiar: min 800x800px, kwadratowe.
 
 ### 4. Warianty
 
-Vendure rozroznia **Product** (np. "Pluszak Panda") i **Variants** (np. "Panda 45cm", "Panda 60cm").
+Vendure rozroznia **Product** (np. "Pluszak Panda") i **Variants** (np. "Panda 45cm", "Panda 60cm"). Kazdy produkt musi miec minimum 1 wariant.
 
 **Produkt z jednym wariantem** (najczesciej):
-- Kliknij "Create" — Vendure automatycznie tworzy jeden wariant
-- Wariant dziedziczy nazwe produktu
+- Zapisz produkt (Create) — Vendure automatycznie tworzy domyslny wariant
+- Wroc do produktu, kliknij na wariant zeby ustawic cene i stock
 
 **Produkt z wieloma wariantami** (np. rozmiary):
-1. W sekcji "Option Groups" kliknij "Create option group"
+1. Przed zapisaniem — w sekcji "Product variants" kliknij "Add option group"
 2. Nazwa grupy: np. `Rozmiar`
 3. Dodaj opcje: `45cm`, `60cm`
-4. Kliknij "Generate variants" — Vendure stworzy wariant per opcje
+4. Zapisz produkt — Vendure wygeneruje wariant per opcje
+5. Kliknij na kazdy wariant i ustaw cene + stock osobno
 
 ### 5. Ceny (per wariant)
 

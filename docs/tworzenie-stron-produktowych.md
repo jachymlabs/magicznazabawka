@@ -13,9 +13,11 @@ Kazdy produkt ma dwie warstwy:
 
 ### 1. Sprawdz ze produkt istnieje w Vendure
 
-Vendure Dashboard: https://vendure.jachymlabs.pl/admin
-- Produkt dodany (nazwa, cena, zdjecia, warianty)
-- Slug ustawiony (np. `pluszak-panda`)
+Jesli produkt nie jest jeszcze dodany — zobacz `docs/dodawanie-produktow.md`.
+
+Produkt musi miec:
+- Nazwe, cene, zdjecia, warianty
+- Slug (np. `pluszak-panda`)
 - Przypisany do channela `magicznazabawka`
 
 ### 2. Skopiuj szablon
