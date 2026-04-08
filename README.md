@@ -1,6 +1,6 @@
 # magicznazabawka.pl — Storefront
 
-Sklep internetowy magicznazabawka.pl. Frontend Astro 6 (SSR) podpiety do wspoldzielonego backendu Vendure.
+Sklep internetowy magicznazabawka.pl. Frontend Astro 6 (SSR) na Vercel, podpiety do wspoldzielonego backendu Vendure.
 
 ## Stack
 
@@ -8,7 +8,7 @@ Sklep internetowy magicznazabawka.pl. Frontend Astro 6 (SSR) podpiety do wspoldz
 - **Backend:** Vendure 3.x (vendure.jachymlabs.pl)
 - **Platnosci:** PayU (BLIK, karta, przelew, PayPo) + COD
 - **Dostawa:** InPost Paczkomaty + Kurier + Kurier pobranie
-- **Deploy:** VPS (pm2) lub Vercel
+- **Deploy:** Vercel (auto-deploy na push do main)
 
 ## Quick Start (dev)
 
@@ -29,7 +29,7 @@ npm run dev
 
 | Zmienna | Opis |
 |---------|------|
-| `VENDURE_API_URL` | URL Vendure Shop API (np. https://vendure.jachymlabs.pl/shop-api) |
+| `VENDURE_API_URL` | URL Vendure Shop API (https://vendure.jachymlabs.pl/shop-api) |
 | `VENDURE_CHANNEL_TOKEN` | Token channela Vendure (`magicznazabawka-shop`) |
 | `PUBLIC_SITE_URL` | URL sklepu (https://magicznazabawka.pl) |
 | `PUBLIC_COOKIE_DOMAIN` | Domena cookie (.magicznazabawka.pl) |
@@ -46,44 +46,214 @@ Caly branding, dane firmy, promo bar — konfiguracja z **Vendure Dashboard**, n
 
 Zmiany widoczne natychmiast (cache 60s).
 
-## Deploy (VPS)
+## Deploy
 
-```bash
-# Na serwerze
-git clone https://github.com/jachymlabs/magicznazabawka.git /opt/magicznazabawka
-cd /opt/magicznazabawka
-cp .env.example .env
-# Edytuj .env z produkcyjnymi credentials
-npm ci
-npm run build
-pm2 start dist/server/entry.mjs --name magicznazabawka
-pm2 save
+Vercel auto-deploy — kazdy push do `main` automatycznie deployuje nowa wersje.
+
+ENV vars ustawione w Vercel Dashboard (Settings > Environment Variables).
+
+## Strony produktowe — jak to dziala
+
+Sklep ma **dwa poziomy** stron produktowych:
+
+### Poziom 1: Automatyczna strona (generic PDP)
+
+Kazdy produkt dodany w Vendure automatycznie ma strone pod `/produkty/[slug]`.
+Dane ciagniete z Vendure: nazwa, cena, zdjecia, warianty, opis HTML, stock.
+
+**Nie trzeba nic robic w kodzie** — wystarczy dodac produkt w Vendure Dashboard.
+
+### Poziom 2: Custom landing page (override)
+
+Dla produktow pod reklamy — reczna strona z sekcjami sprzedazowymi.
+
+Jak stworzyc:
+1. Stworz plik `src/pages/produkty/<slug>.astro` (slug = taki sam jak w Vendure)
+2. Na gorze uzyj `<ProductDetail product={product} />` — to stala karta (zdjecie, cena, warianty, ATC button)
+3. Pod spodem dodaj custom sekcje: problem/bol, solution, features, comparison, testimonials, FAQ, guarantee, final CTA
+
+Astro automatycznie priorytetyzuje static route nad `[slug]` — override po prostu dziala.
+
+**Szablon nowej strony produktowej:**
+
+```astro
+---
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import ProductDetail from '@/components/ProductDetail.astro';
+import StickyATCBar from '@/components/StickyATCBar';
+import FinalCTA from '@/components/FinalCTA.astro';
+import FAQAccordion from '@/components/FAQAccordion';
+import FeaturesGrid from '@/components/sections/FeaturesGrid.astro';
+import ComparisonTable from '@/components/sections/ComparisonTable.astro';
+import TestimonialQuote from '@/components/sections/TestimonialQuote.astro';
+import StatsBar from '@/components/sections/StatsBar.astro';
+import ReviewsCarousel from '@/components/sections/ReviewsCarousel.astro';
+import { shopApi, shopApiRaw, redirectWithToken } from '@/lib/vendure';
+import { GET_PRODUCT_DETAIL } from '@/lib/queries';
+import { ADD_TO_CART } from '@/lib/mutations';
+import { buildAssetUrl } from '@/lib/utils';
+import type { VendureVariant } from '@/types/vendure';
+
+const SLUG = 'twoj-slug-produktu';  // <-- ZMIEN NA SLUG PRODUKTU
+
+// POST handler (no-JS fallback)
+if (Astro.request.method === 'POST') {
+  try {
+    const formData = await Astro.request.formData();
+    const variantId = formData.get('variantId') as string;
+    const rawQty = parseInt(formData.get('quantity') as string || '1', 10);
+    const quantity = Math.max(1, Math.min(99, isNaN(rawQty) ? 1 : rawQty));
+    if (variantId) {
+      const result = await shopApiRaw<any>(ADD_TO_CART, { variantId, quantity }, Astro.request);
+      return redirectWithToken('/koszyk', result.authToken);
+    }
+  } catch {}
+}
+
+// Fetch product
+const data = await shopApi<any>(GET_PRODUCT_DETAIL, { slug: SLUG }, Astro.request);
+const product = data.product;
+if (!product) return Astro.redirect('/');
+
+const lowestPrice = product.variants?.length
+  ? Math.min(...product.variants.map((v: VendureVariant) => v.priceWithTax))
+  : 0;
+
+const ogImageUrl = product?.featuredAsset?.preview
+  ? buildAssetUrl(product.featuredAsset.preview, 'large')
+  : undefined;
+---
+
+<BaseLayout
+  title={`${product.name} — Sklep`}
+  description="WPISZ META DESCRIPTION"
+  ogImage={ogImageUrl}
+  ogType="product"
+>
+  {/* 1. STALA KARTA PRODUKTU (z Vendure) */}
+  <ProductDetail product={product} />
+
+  {/* Sticky ATC bar */}
+  {product.variants[0] && (
+    <StickyATCBar
+      client:idle
+      productName={product.name}
+      price={lowestPrice}
+      variantId={product.variants[0].id}
+    />
+  )}
+
+  {/* 2. CUSTOM SEKCJE — dodaj/usun/zmien wg potrzeb */}
+
+  {/* Przykladowe sekcje (odkomentuj i wypelnij): */}
+
+  {/* <StatsBar theme="dark" stats={[
+    { value: '500+', label: 'Sprzedanych sztuk' },
+    { value: '4.9/5', label: 'Srednia ocena' },
+    { value: '24h', label: 'Wysylka InPost' },
+  ]} /> */}
+
+  {/* <FeaturesGrid headline="Dlaczego warto?" columns={3} features={[
+    { icon: 'star', title: 'Cecha 1', description: 'Opis cechy' },
+    { icon: 'shield-check', title: 'Cecha 2', description: 'Opis cechy' },
+    { icon: 'truck', title: 'Cecha 3', description: 'Opis cechy' },
+  ]} /> */}
+
+  {/* <ComparisonTable
+    headline="My vs konkurencja"
+    ourBrand="Nasza marka"
+    competitor="Konkurencja"
+    rows={[
+      { feature: 'Cecha', us: true, them: false },
+    ]}
+  /> */}
+
+  {/* <TestimonialQuote
+    quote="Opinia klienta..."
+    authorName="Jan z Krakowa"
+    authorTitle="Weryfikowany zakup"
+    rating={5}
+  /> */}
+
+  {/* 3. FINAL CTA */}
+  <FinalCTA
+    productName={product.name}
+    price={lowestPrice}
+    variantId={product.variants[0]?.id}
+    image={product.featuredAsset?.preview}
+    urgencyText="Zamow do 14:00 — wysylka dzis!"
+  />
+
+  {/* ATC script */}
+  <script>
+    function initAddToCartForm() {
+      const form = document.querySelector('form[method="POST"]') as HTMLFormElement | null;
+      if (!form) return;
+      const btn = form.querySelector('button[type="submit"]') as HTMLButtonElement | null;
+      if (!btn) return;
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const formData = new FormData(form);
+        const variantId = formData.get('variantId') as string;
+        const quantity = parseInt(formData.get('quantity') as string || '1', 10);
+        if (!variantId) return;
+        btn.disabled = true;
+        const originalText = btn.textContent;
+        btn.textContent = 'Dodawanie...';
+        try {
+          const res = await fetch('/api/cart', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'same-origin',
+            body: JSON.stringify({ variantId, quantity }),
+          });
+          if (res.ok) {
+            const data = await res.json();
+            window.dispatchEvent(new CustomEvent('cart-updated', { detail: data.order }));
+          } else { form.submit(); return; }
+        } catch { form.submit(); return; }
+        btn.disabled = false;
+        btn.textContent = originalText;
+      });
+    }
+    initAddToCartForm();
+  </script>
+</BaseLayout>
 ```
 
-## Deploy (Vercel)
+### Dostepne sekcje (komponenty)
 
-1. Zmien adapter w `astro.config.mjs`:
-```js
-import vercel from '@astrojs/vercel';
-// adapter: vercel(),
-```
-2. `npm install @astrojs/vercel`
-3. `vercel --yes --prod`
-4. Ustaw env vars w Vercel Dashboard
-5. `vercel domains add magicznazabawka.pl`
-
-## Boilerplate
-
-Ten storefront bazuje na [astro-storefront-pl](https://github.com/jachymlabs/astro-storefront-pl). Aktualizacje boilerplate'u mozna mergowac recznie.
+| Komponent | Opis | Props |
+|-----------|------|-------|
+| `StatsBar` | Pasek ze statystykami | `stats[]`, `theme` |
+| `FeaturesGrid` | Grid z ikonami i opisami | `features[]`, `columns`, `headline`, `theme` |
+| `ComparisonTable` | Tabela porownawcza my vs oni | `rows[]`, `ourBrand`, `competitor` |
+| `TestimonialQuote` | Pojedyncza opinia | `quote`, `authorName`, `rating` |
+| `ReviewsCarousel` | Karuzela opinii | `reviews[]`, `headline` |
+| `FAQAccordion` | Rozwijane FAQ | `items[]`, `title` |
+| `FinalCTA` | Koncowe wezwanie do akcji | `productName`, `price`, `variantId` |
+| `HeroSection` | Hero banner | `headline`, `subheadline`, `image` |
+| `BeforeAfter` | Przed/po | `before`, `after` |
+| `BrandStory` | Historia marki | `title`, `paragraphs` |
 
 ## Struktura
 
 ```
 src/
-├── components/   # Header, Footer, PromoBar, CartDrawer, TrustBadges...
-├── layouts/      # BaseLayout (SEO, OG, Meta Pixel, consent)
-├── lib/          # vendure.ts, store-config.ts, cart-store.ts
-├── pages/        # index, produkty/[slug], checkout, koszyk, regulamin...
-├── styles/       # global.css (Tailwind)
-└── types/        # TypeScript types
+├── components/
+│   ├── ProductDetail.astro   # Stala karta produktu (Vendure data)
+│   ├── sections/             # Sekcje do custom landing pages
+│   ├── Header.astro, Footer.astro, CartDrawer.tsx...
+├── layouts/BaseLayout.astro  # SEO, OG, Meta Pixel, consent
+├── lib/                      # vendure.ts, store-config.ts, cart-store.ts
+├── pages/
+│   ├── produkty/[slug].astro # Generic PDP (auto z Vendure)
+│   ├── produkty/<slug>.astro # Override per produkt (custom landing)
+│   ├── checkout.astro, koszyk.astro, regulamin.astro...
+├── styles/global.css
+└── types/
 ```
+
+## Boilerplate
+
+Bazuje na [astro-storefront-pl](https://github.com/jachymlabs/astro-storefront-pl). Aktualizacje boilerplate'u mozna mergowac recznie.

@@ -1,5 +1,5 @@
 import { defineConfig } from 'astro/config';
-import node from '@astrojs/node';
+import vercel from '@astrojs/vercel';
 import tailwindcss from '@tailwindcss/vite';
 import sitemap from '@astrojs/sitemap';
 import react from '@astrojs/react';
@@ -7,9 +7,7 @@ import react from '@astrojs/react';
 export default defineConfig({
   site: 'https://magicznazabawka.pl',
   output: 'server',
-  adapter: node({
-    mode: 'standalone',
-  }),
+  adapter: vercel(),
   integrations: [sitemap(), react()],
   vite: {
     plugins: [tailwindcss()],
