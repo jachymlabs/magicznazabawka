@@ -5,7 +5,7 @@ import sitemap from '@astrojs/sitemap';
 import react from '@astrojs/react';
 
 export default defineConfig({
-  site: 'https://sklep.jachymlabs.pl',
+  site: 'https://magicznazabawka.pl',
   output: 'server',
   adapter: node({
     mode: 'standalone',
