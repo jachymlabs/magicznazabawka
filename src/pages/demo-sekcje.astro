@@ -1,0 +1,144 @@
+---
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import SectionRenderer from '@/components/sections/SectionRenderer.astro';
+import type { PageSection } from '@/types/sections';
+
+// Block access in production — demo page only for development
+if (import.meta.env.PROD) {
+  return Astro.redirect('/');
+}
+
+// Demo: wszystkie sekcje z przykładowymi danymi
+const sections: PageSection[] = [
+  {
+    type: 'hero',
+    props: {
+      badge: 'Bestseller 2025',
+      headline: 'Japoński Ręcznik Peelingujący',
+      subheadline: 'Antybakteryjny, szybkoschnący, idealny do złuszczania całego ciała',
+      features: [
+        'Wykonany z naturalnych włókien antybakteryjnych',
+        'Głęboko złuszcza naskórek',
+        'Eliminuje do 99,9% bakterii',
+        'Dla czystszej i zdrowszej skóry',
+        '30-dniowa gwarancja satysfakcji',
+      ],
+      rating: 4.8,
+      reviewCount: 228,
+      imageUrl: 'https://placehold.co/600x600/e2e8f0/475569?text=Produkt',
+      primaryCtaLabel: 'Zamów teraz',
+      primaryCtaUrl: '#zamow',
+    },
+  },
+  {
+    type: 'stats-bar',
+    props: {
+      theme: 'dark',
+      paddingY: 'md',
+      stats: [
+        { value: '5,300+', label: 'Zadowolonych klientów' },
+        { value: '99,9%', label: 'Eliminacja bakterii' },
+        { value: '15 min', label: 'Czas schnięcia' },
+        { value: '4.8★', label: 'Średnia ocena' },
+      ],
+    },
+  },
+  {
+    type: 'features-grid',
+    props: {
+      headline: 'Co wyróżnia nasz produkt?',
+      columns: 3,
+      features: [
+        { icon: 'shield-check', title: 'Antybakteryjny', description: 'Jony srebra eliminują 99,9% bakterii — Twój ręcznik pozostaje świeży.' },
+        { icon: 'wind', title: 'FastDry™', description: 'Schnie w zaledwie 15 minut, zapobiegając rozwojowi bakterii i zapachów.' },
+        { icon: 'sparkles', title: 'Głębokie złuszczanie', description: 'Delikatnie usuwa martwy naskórek, stymulując naturalną odnowę skóry.' },
+        { icon: 'heart', title: 'Bezpieczny dla skóry', description: 'Odpowiedni nawet dla skóry wrażliwej i dojrzałej. Bez chemii.' },
+        { icon: 'refresh-cw', title: 'Długotrwały', description: 'Pranie w pralce — pozostaje skuteczny nawet po roku użytkowania.' },
+        { icon: 'truck', title: 'Wysyłka 24h', description: 'Zamów do 12:00 a paczkę otrzymasz następnego dnia.' },
+      ],
+    },
+  },
+  {
+    type: 'testimonial-quote',
+    props: {
+      theme: 'accent',
+      quote: 'Ten ręcznik jest genialny! Już po pierwszym użyciu poczułam, że moja skóra jest znacznie gładsza i bardziej miękka. Złuszcza bez podrażnień, a jego podłużny format jest super praktyczny do mycia pleców.',
+      authorName: 'Katarzyna W.',
+      authorTitle: 'Zweryfikowany zakup',
+      rating: 5,
+    },
+  },
+  {
+    type: 'before-after',
+    props: {
+      headline: '25-dniowa transformacja',
+      beforeImageUrl: 'https://placehold.co/500x400/fecaca/991b1b?text=Dzień+1',
+      beforeLabel: 'Dzień 1',
+      afterImageUrl: 'https://placehold.co/500x400/bbf7d0/166534?text=Dzień+25',
+      afterLabel: 'Dzień 25',
+      description: 'Przez lata zmagałam się z suchymi plamami i uporczywym trądzikiem na plecach — nic nie działało. Po użyciu tego produktu moja skóra jest niewiarygodnie gładka i zdrowa.',
+      authorName: 'Katarzyna W., 43',
+      authorTitle: 'Zweryfikowany zakup',
+    },
+  },
+  {
+    type: 'comparison-table',
+    props: {
+      headline: 'Nasz produkt kontra konkurencja',
+      ourBrand: 'Kōji Towel',
+      competitor: 'Zwykły ręcznik / gąbka',
+      rows: [
+        { feature: 'Antybakteryjne jony srebra', us: true, them: false },
+        { feature: 'Dociera do trudnych miejsc (plecy)', us: true, them: false },
+        { feature: 'Błyskawiczne wysychanie (15 min)', us: true, them: false },
+        { feature: 'Głębokie mechaniczne złuszczanie', us: true, them: false },
+        { feature: 'Stymuluje produkcję kolagenu', us: true, them: false },
+        { feature: 'Bezpieczny dla skóry wrażliwej', us: true, them: true },
+        { feature: 'Usuwa nadmiar sebum i brud', us: true, them: true },
+        { feature: 'Wysyłka w 24h (PL)', us: true, them: false },
+        { feature: 'Gwarancja braku zapachu stęchlizny', us: true, them: false },
+      ],
+    },
+  },
+  {
+    type: 'faq-accordion',
+    props: {
+      headline: 'Najczęściej zadawane pytania',
+      items: [
+        { question: 'Czy sprawdzi się przy suchej i wrażliwej skórze?', answer: 'Tak! Nasz produkt jest zaprojektowany z myślą o każdym typie skóry, w tym skórze wrażliwej. Naturalne włókna bambusowe zapewniają <strong>delikatne złuszczanie</strong> bez podrażnień.' },
+        { question: 'Jakie są wymiary produktu?', answer: 'Ręcznik ma wymiary 100cm x 30cm — idealnie dopasowany do mycia trudno dostępnych miejsc, takich jak plecy i stopy.' },
+        { question: 'Na jak długo wystarcza?', answer: 'Przy regularnym użytkowaniu i praniu, nasz produkt zachowuje pełną skuteczność przez <strong>minimum 12 miesięcy</strong>.' },
+        { question: 'Jak pielęgnować produkt?', answer: 'Wystarczy prać w pralce w temperaturze do 40°C. Nie używaj płynów do płukania — mogą zmniejszyć skuteczność włókien antybakteryjnych.' },
+        { question: 'Czy mogę zwrócić produkt?', answer: 'Oczywiście! Oferujemy <strong>30-dniową gwarancję satysfakcji</strong>. Jeśli produkt nie spełni Twoich oczekiwań, zwrócimy pełną kwotę.' },
+      ],
+    },
+  },
+  {
+    type: 'reviews-carousel',
+    props: {
+      headline: 'Co mówią nasi klienci',
+      reviews: [
+        { body: 'Praktyczny gadżet dla każdego faceta. Dobrze peelinguje i jest bardzo wytrzymały.', author: 'Marek P.', rating: 5 },
+        { body: 'Świetny produkt. Używam go od miesiąca i widzę ogromną poprawę w teksturze skóry na nogach.', author: 'Katarzyna L.', rating: 5 },
+        { body: 'Próbowałam wszystkiego na moją suchą skórę — ten ręcznik był jedyną rzeczą, która zadziałała.', author: 'Katarzyna J.', rating: 5 },
+        { body: 'Bardzo szybko wysycha, co było dla mnie najważniejsze. Koniec z nieprzyjemnym zapachem gąbek!', author: 'Anna K.', rating: 4 },
+        { body: 'Rewelacja. Moja skóra nigdy nie była tak miękka, a mycie pleców w końcu nie wymaga gimnastyki.', author: 'Sylwia W.', rating: 5 },
+        { body: 'Mój mąż też zaczął używać i teraz mamy dwa w domu. Polecam każdemu!', author: 'Regina N.', rating: 5 },
+      ],
+    },
+  },
+  {
+    type: 'brand-story',
+    props: {
+      headline: 'Nasza historia',
+      bodyHtml: '<p>Po latach analiz potrzeb skóry stworzyliśmy produkt — świadome rozwiązanie dla każdego, kto oczekuje realnego efektu pod prysznicem.</p><p>Jego wydłużona forma, antybakteryjne włókna bambusowe i szybkoschnąca konstrukcja zapewniają idealną równowagę między dokładnym oczyszczaniem a <strong>kontrolowanym, delikatnym złuszczaniem</strong> — odpowiednim do codziennego rytuału pielęgnacyjnego.</p>',
+      imageUrl: 'https://placehold.co/500x400/e0e7ff/3730a3?text=Marka',
+      imageAlignment: 'right',
+    },
+  },
+];
+---
+
+<BaseLayout title="Demo — Sekcje landing page" noindex>
+  <SectionRenderer sections={sections} />
+</BaseLayout>

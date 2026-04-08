@@ -1,0 +1,164 @@
+# Astro Storefront — Deploy to Digital Ocean (git-based)
+#
+# Triggers on push to main branch.
+# Git pull on server, npm ci, astro build, PM2 restart.
+#
+# Required GitHub Secrets:
+#   DO_SSH_KEY, DO_HOST, GH_DEPLOY_TOKEN
+#   VENDURE_CHANNEL_TOKEN, VENDURE_API_URL, PUBLIC_SITE_URL
+
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+
+concurrency:
+  group: deploy-storefront
+  cancel-in-progress: false
+
+jobs:
+  ci:
+    name: CI Gate
+    runs-on: ubuntu-latest
+    env:
+      VENDURE_API_URL: http://localhost:3000/shop-api
+      VENDURE_CHANNEL_TOKEN: test
+      PUBLIC_SITE_URL: https://test.example.com
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+
+  deploy:
+    name: Deploy to Production
+    needs: ci
+    runs-on: ubuntu-latest
+    env:
+      HOST: ${{ secrets.DO_HOST }}
+      SSH_KEY_PATH: ~/.ssh/deploy_key
+    steps:
+      - name: Setup SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.DO_SSH_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -H ${{ secrets.DO_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Backup & Pull latest code
+        env:
+          GH_TOKEN: ${{ secrets.GH_DEPLOY_TOKEN }}
+        run: |
+          ssh -i $SSH_KEY_PATH root@${HOST} bash -s << SCRIPT
+            set -e
+
+            git config --global credential.helper store
+            echo "https://x-access-token:${GH_TOKEN}@github.com" > ~/.git-credentials
+            chmod 600 ~/.git-credentials
+
+            cd /opt/storefront
+
+            # Backup dist
+            [ -d dist ] && cp -r dist dist-backup || true
+
+            if [ ! -d ".git" ]; then
+              echo "--- Git repo not found. Initializing ---"
+              cd /opt
+              mv storefront storefront.old.\$(date +%s) 2>/dev/null || true
+              git clone --branch main --single-branch https://github.com/jachymlabs/astro-storefront-pl.git storefront
+              cd storefront
+              echo "Git repo initialized."
+            else
+              echo "--- Fetching latest code ---"
+              git fetch origin main
+              git reset --hard origin/main
+            fi
+
+            echo "--- Installing dependencies ---"
+            npm ci
+
+            rm -f ~/.git-credentials
+            git config --global --unset credential.helper 2>/dev/null || true
+          SCRIPT
+
+      - name: Build on server
+        run: |
+          ssh -i $SSH_KEY_PATH root@${HOST} bash -s << SCRIPT
+            set -e
+            cd /opt/storefront
+
+            echo "--- Astro build ---"
+            VENDURE_CHANNEL_TOKEN="${{ secrets.VENDURE_CHANNEL_TOKEN }}" \
+            VENDURE_API_URL="${{ secrets.VENDURE_API_URL }}" \
+            PUBLIC_SITE_URL="${{ secrets.PUBLIC_SITE_URL }}" \
+            npm run build
+
+            echo "Build complete."
+          SCRIPT
+
+      - name: PM2 restart
+        run: |
+          ssh -i $SSH_KEY_PATH root@${HOST} bash -s << SCRIPT
+            set -e
+            cd /opt/storefront
+
+            export VENDURE_CHANNEL_TOKEN="${{ secrets.VENDURE_CHANNEL_TOKEN }}"
+            export VENDURE_API_URL="${{ secrets.VENDURE_API_URL }}"
+            export PUBLIC_SITE_URL="${{ secrets.PUBLIC_SITE_URL }}"
+            export HOST=0.0.0.0
+            export PORT=4321
+
+            if pm2 describe storefront > /dev/null 2>&1; then
+              pm2 reload storefront --update-env
+            else
+              pm2 start dist/server/entry.mjs --name storefront
+            fi
+
+            pm2 save
+            echo "PM2 restart complete."
+          SCRIPT
+
+      - name: Health check
+        run: |
+          echo "--- Health check (max 8 attempts, 5s interval) ---"
+          for i in $(seq 1 8); do
+            STATUS=$(ssh -i $SSH_KEY_PATH root@${HOST} \
+              'curl -s -o /dev/null -w "%{http_code}" http://localhost:4321' 2>/dev/null || echo "000")
+
+            if [ "$STATUS" = "200" ] || [ "$STATUS" = "301" ] || [ "$STATUS" = "302" ]; then
+              echo "Storefront responding (HTTP $STATUS) - OK"
+              exit 0
+            fi
+
+            echo "Attempt $i/8: HTTP $STATUS"
+            sleep 5
+          done
+
+          echo "::error::HEALTH CHECK FAILED — Storefront not responding"
+          exit 1
+
+      - name: Rollback on failure
+        if: failure()
+        run: |
+          ssh -i $SSH_KEY_PATH root@${HOST} bash -s << 'ROLLBACK'
+            set -e
+            cd /opt/storefront
+
+            if [ -d dist-backup ]; then
+              echo "--- Restoring dist from backup ---"
+              rm -rf dist
+              mv dist-backup dist
+              pm2 reload storefront --update-env
+              echo "ROLLBACK COMPLETE."
+            else
+              echo "No backup found — manual intervention required."
+            fi
+          ROLLBACK
+
+      - name: Cleanup
+        if: always()
+        run: rm -f ~/.ssh/deploy_key
