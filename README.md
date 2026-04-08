@@ -253,6 +253,11 @@ src/
     └── tworzenie-stron-produktowych.md  ← Pelna dokumentacja
 ```
 
+## Dokumentacja
+
+- **[docs/dodawanie-produktow.md](docs/dodawanie-produktow.md)** — jak dodawac produkty w Vendure (krok po kroku)
+- **[docs/tworzenie-stron-produktowych.md](docs/tworzenie-stron-produktowych.md)** — jak tworzyc custom strony produktowe
+
 ## Przydatne linki
 
 - **Vendure Dashboard:** https://vendure.jachymlabs.pl/admin

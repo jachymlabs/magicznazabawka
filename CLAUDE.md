@@ -58,6 +58,7 @@ src/pages/produkty/
 └── <slug>.astro        ← custom strona per produkt
 ```
 
-## Pelna dokumentacja
+## Dokumentacja
 
-Szczegolowa instrukcja z przykladami: `docs/tworzenie-stron-produktowych.md`
+- `docs/dodawanie-produktow.md` — jak dodawac produkty w Vendure Dashboard
+- `docs/tworzenie-stron-produktowych.md` — jak tworzyc custom strony produktowe
