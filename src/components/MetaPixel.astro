@@ -2,10 +2,13 @@
 /**
  * Meta Pixel (fbevents.js) — browser-side.
  * Loads ONLY if:
- * 1. PUBLIC_META_PIXEL_ID is set
+ * 1. pixelId is set (from Channel custom fields)
  * 2. cookie_consent=accepted (checked client-side)
  */
-const pixelId = (import.meta.env.PUBLIC_META_PIXEL_ID || '').trim();
+interface Props {
+  pixelId?: string | null;
+}
+const { pixelId } = Astro.props;
 ---
 
 {pixelId && (

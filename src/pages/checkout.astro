@@ -14,7 +14,7 @@ import {
   TRANSITION_ORDER_TO_STATE,
   ADD_PAYMENT_TO_ORDER,
 } from '@/lib/mutations';
-import { sendCAPIEvent, extractUserData, sha256Hash } from '@/lib/meta-capi';
+import { sendCAPIEvent, buildUserData, generateEventId } from '@/lib/meta-capi';
 import { getStoreConfig } from '@/lib/store-config';
 const storeConfig = await getStoreConfig(Astro.request);
 
@@ -279,29 +279,34 @@ if (Astro.request.method === 'POST') {
           const purchaseCookies = Astro.request.headers.get('cookie') || '';
           const purchaseHasConsent = purchaseCookies.includes('cookie_consent=accepted');
           if (purchaseHasConsent) {
-            const purchaseEventId = crypto.randomUUID();
-            const baseUserData = extractUserData(Astro.request);
+            const purchaseUserData = await buildUserData(Astro.request, {
+              email: formValues.email,
+              phone: formValues.phone,
+              firstName: formValues.firstName,
+              lastName: formValues.lastName,
+              city: formValues.city,
+              postalCode: formValues.postalCode,
+            });
 
-            const purchaseUserData: Record<string, any> = { ...baseUserData };
-            if (formValues.email) {
-              purchaseUserData.em = [await sha256Hash(formValues.email)];
-            }
-            if (formValues.phone) {
-              purchaseUserData.ph = [await sha256Hash(formValues.phone.replace(/[\s\-()]/g, ''))];
-            }
-
-            await sendCAPIEvent({
+            sendCAPIEvent({
               event_name: 'Purchase',
               event_time: Math.floor(Date.now() / 1000),
-              event_id: purchaseEventId,
+              event_id: generateEventId(),
               event_source_url: Astro.url.href,
               action_source: 'website',
-              user_data: purchaseUserData as any,
+              user_data: purchaseUserData,
               custom_data: {
                 value: paymentResponse.totalWithTax / 100,
                 currency: 'PLN',
                 order_id: paymentResponse.code,
                 num_items: paymentResponse.totalQuantity,
+                content_type: 'product',
+                content_ids: paymentResponse.lines?.map((l: any) => l.productVariant?.sku).filter(Boolean) || [],
+                contents: paymentResponse.lines?.map((l: any) => ({
+                  id: l.productVariant?.sku,
+                  quantity: l.quantity,
+                  item_price: l.unitPriceWithTax / 100,
+                })) || [],
               },
             });
           }

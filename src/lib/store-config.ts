@@ -14,6 +14,8 @@ export interface StoreConfig {
   companyAddress: string | null;
   returnAddress: string | null;
   inpostGeowidgetToken: string | null;
+  metaPixelId: string | null;
+  metaDatasetId: string | null;
 }
 
 const DEFAULTS: StoreConfig = {
@@ -29,6 +31,8 @@ const DEFAULTS: StoreConfig = {
   companyAddress: null,
   returnAddress: null,
   inpostGeowidgetToken: null,
+  metaPixelId: null,
+  metaDatasetId: null,
 };
 
 let cached: StoreConfig | null = null;
@@ -55,6 +59,8 @@ export async function getStoreConfig(request?: Request): Promise<StoreConfig> {
       companyAddress: cf.companyAddress || DEFAULTS.companyAddress,
       returnAddress: cf.returnAddress || DEFAULTS.returnAddress,
       inpostGeowidgetToken: cf.inpostGeowidgetToken || DEFAULTS.inpostGeowidgetToken,
+      metaPixelId: cf.metaPixelId || DEFAULTS.metaPixelId,
+      metaDatasetId: cf.metaDatasetId || DEFAULTS.metaDatasetId,
     };
     return cached;
   } catch (e: any) {

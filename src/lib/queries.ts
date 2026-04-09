@@ -19,6 +19,8 @@ export const GET_STORE_CONFIG = /* GraphQL */ `
         companyAddress
         returnAddress
         inpostGeowidgetToken
+        metaPixelId
+        metaDatasetId
       }
     }
   }

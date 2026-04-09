@@ -6,6 +6,7 @@ import {
   ORDER_FRAGMENT,
 } from '@/lib/vendure-api';
 import { isRateLimited } from '@/lib/rate-limit';
+import { sendCAPIEvent, buildUserData, generateEventId } from '@/lib/meta-capi';
 
 const GET_ACTIVE_ORDER = `query { activeOrder { ${ORDER_FRAGMENT} } }`;
 
@@ -65,6 +66,24 @@ export const POST: APIRoute = async ({ request }) => {
 
     const result = data?.addItemToOrder;
     if (result?.__typename === 'Order') {
+      // CAPI: AddToCart — consent-gated
+      const cookies = request.headers.get('cookie') || '';
+      if (cookies.includes('cookie_consent=accepted')) {
+        const userData = await buildUserData(request);
+        sendCAPIEvent({
+          event_name: 'AddToCart',
+          event_time: Math.floor(Date.now() / 1000),
+          event_id: generateEventId(),
+          event_source_url: request.headers.get('referer') || '',
+          action_source: 'website',
+          user_data: userData,
+          custom_data: {
+            content_ids: [variantId],
+            content_type: 'product',
+            currency: 'PLN',
+          },
+        });
+      }
       return buildResponse({ order: result }, newToken);
     }
     return buildResponse({ order: null, error: result?.message }, newToken);

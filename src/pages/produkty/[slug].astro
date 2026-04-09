@@ -11,7 +11,7 @@ import { ADD_TO_CART } from '@/lib/mutations';
 import { sanitizeHtml } from '@/lib/sanitize';
 import { buildAssetUrl } from '@/lib/utils';
 import type { VendureProduct, VendureVariant, VendureAsset, VendureCollection } from '@/types/vendure';
-import { sendCAPIEvent, extractUserData } from '@/lib/meta-capi';
+import { sendCAPIEvent, buildUserData, generateEventId } from '@/lib/meta-capi';
 
 const { slug } = Astro.params;
 
@@ -34,12 +34,11 @@ if (Astro.request.method === 'POST') {
       const cookies = Astro.request.headers.get('cookie') || '';
       const hasConsent = cookies.includes('cookie_consent=accepted');
       if (hasConsent) {
-        const addToCartEventId = crypto.randomUUID();
-        const userData = extractUserData(Astro.request);
+        const userData = await buildUserData(Astro.request);
         sendCAPIEvent({
           event_name: 'AddToCart',
           event_time: Math.floor(Date.now() / 1000),
-          event_id: addToCartEventId,
+          event_id: generateEventId(),
           event_source_url: Astro.url.href,
           action_source: 'website',
           user_data: userData,
@@ -71,6 +70,31 @@ try {
 
 if (!product && !error) {
   return Astro.rewrite('/404');
+}
+
+// CAPI: ViewContent (server-side) — consent-gated
+if (product) {
+  const vcCookies = Astro.request.headers.get('cookie') || '';
+  const vcHasConsent = vcCookies.includes('cookie_consent=accepted');
+  if (vcHasConsent) {
+    const vcUserData = await buildUserData(Astro.request);
+    const firstVariant = product.variants?.[0];
+    sendCAPIEvent({
+      event_name: 'ViewContent',
+      event_time: Math.floor(Date.now() / 1000),
+      event_id: generateEventId(),
+      event_source_url: Astro.url.href,
+      action_source: 'website',
+      user_data: vcUserData,
+      custom_data: {
+        content_ids: [firstVariant?.sku || product.id],
+        content_name: product.name,
+        content_type: 'product',
+        value: firstVariant ? firstVariant.priceWithTax / 100 : 0,
+        currency: 'PLN',
+      },
+    });
+  }
 }
 
 // Find parent collection for breadcrumbs

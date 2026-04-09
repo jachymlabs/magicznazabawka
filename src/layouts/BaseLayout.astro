@@ -8,6 +8,7 @@ import CartDrawer from '@/components/CartDrawer';
 import ExitIntentOverlay from '@/components/ExitIntentOverlay';
 import SMSCaptureOverlay from '@/components/SMSCaptureOverlay';
 import { getStoreConfig } from '@/lib/store-config';
+import { sendCAPIEvent, buildUserData, generateEventId } from '@/lib/meta-capi';
 import '@/styles/global.css';
 
 interface Props {
@@ -40,6 +41,21 @@ const canonicalUrl = canonical || Astro.url.href;
 const siteUrl = (import.meta.env.PUBLIC_SITE_URL || 'http://localhost:4321').trim();
 const ogImageUrl = ogImage ? (ogImage.startsWith('http') ? ogImage : `${siteUrl}${ogImage}`) : undefined;
 const freeShippingThreshold = config.freeShippingThreshold;
+
+// CAPI: PageView (server-side) — consent-gated
+const cookies = Astro.request.headers.get('cookie') || '';
+const hasConsent = cookies.includes('cookie_consent=accepted');
+if (hasConsent && config.metaPixelId) {
+  const userData = await buildUserData(Astro.request);
+  sendCAPIEvent({
+    event_name: 'PageView',
+    event_time: Math.floor(Date.now() / 1000),
+    event_id: generateEventId(),
+    event_source_url: Astro.url.href,
+    action_source: 'website',
+    user_data: userData,
+  });
+}
 ---
 
 <!doctype html>
@@ -81,8 +97,8 @@ const freeShippingThreshold = config.freeShippingThreshold;
     />
     <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" /></noscript>
 
-    <!-- Meta Pixel (consent-gated) -->
-    <MetaPixel />
+    <!-- Meta Pixel (consent-gated, ID from Channel config) -->
+    <MetaPixel pixelId={config.metaPixelId} />
 
     <!-- Extra head content -->
     <slot name="head" />
