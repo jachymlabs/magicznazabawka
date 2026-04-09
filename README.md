@@ -26,17 +26,27 @@ Sklep: http://localhost:4321
 
 ## ENV
 
-| Zmienna | Wartosc |
-|---------|---------|
-| `VENDURE_API_URL` | `https://vendure.jachymlabs.pl/shop-api` |
-| `VENDURE_CHANNEL_TOKEN` | `magicznazabawka-shop` |
-| `PUBLIC_SITE_URL` | `https://magicznazabawka.pl` |
-| `PUBLIC_COOKIE_DOMAIN` | `.magicznazabawka.pl` |
-| `PUBLIC_META_PIXEL_ID` | Meta Pixel ID (opcjonalne) |
-| `META_CAPI_ACCESS_TOKEN` | Meta CAPI token (opcjonalne) |
+| Zmienna | Wartosc | Wymagana |
+|---------|---------|----------|
+| `VENDURE_API_URL` | `https://vendure.jachymlabs.pl/shop-api` | Tak |
+| `VENDURE_CHANNEL_TOKEN` | `magicznazabawka-shop` | Tak |
+| `PUBLIC_SITE_URL` | `https://magicznazabawka.pl` | Tak |
+| `PUBLIC_COOKIE_DOMAIN` | `.magicznazabawka.pl` | Tak |
+| `META_CAPI_ACCESS_TOKEN` | Meta CAPI token (server-side) | Nie — bez tego CAPI nie wysyla, pixel browser dziala |
+| `META_DATASET_ID` | Meta Dataset ID (fallback) | Nie — priorytet ma Channel custom field `metaDatasetId` |
 
 Env vars sa ustawione w Vercel Dashboard (Settings > Environment Variables).
 Lokalnie: `.env` (nie commituj).
+
+## Meta Pixel + CAPI
+
+Pixel ID i Dataset ID konfigurowane z **Vendure Dashboard** (nie z env vars):
+
+1. https://vendure.jachymlabs.pl/dashboard → Settings → Channels → magicznazabawka → tab **Meta Pixel**
+2. Wypelnij `Meta Pixel ID` i `Meta Dataset ID`
+3. W Vercel dodaj env var `META_CAPI_ACCESS_TOKEN` (z Events Manager → Settings → Generate Access Token)
+
+Bez tych danych sklep dziala normalnie — pixel i CAPI sa gracefully disabled.
 
 ## Deploy
 
@@ -47,9 +57,9 @@ Nie trzeba nic robic recznie — push i gotowe.
 
 Branding, dane firmy, promo bar — wszystko z **Vendure Dashboard**, nie z kodu:
 
-1. https://vendure.jachymlabs.pl/admin
+1. https://vendure.jachymlabs.pl/dashboard
 2. Settings > Channels > magicznazabawka
-3. Wypelnij: storeName, contactEmail, promoBarText, companyName, companyNip, companyAddress, etc.
+3. Pola pogrupowane w taby: **Sklep**, **Marketing**, **Meta Pixel**, **PayU**, **BaseLinker**, **InPost**
 
 Zmiany widoczne bez deployu (cache 60s).
 
