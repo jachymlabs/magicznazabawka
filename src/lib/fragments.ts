@@ -25,6 +25,7 @@ export const ORDER_FRAGMENT = `
     productVariant {
       id
       name
+      sku
       product {
         id
         name

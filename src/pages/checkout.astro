@@ -308,7 +308,7 @@ if (Astro.request.method === 'POST') {
                   item_price: l.unitPriceWithTax / 100,
                 })) || [],
               },
-            });
+            }, storeConfig.metaDatasetId);
           }
 
           // Check for PayU redirect URI (REDIRECT/PAYPO flows)

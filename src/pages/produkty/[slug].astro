@@ -12,7 +12,9 @@ import { sanitizeHtml } from '@/lib/sanitize';
 import { buildAssetUrl } from '@/lib/utils';
 import type { VendureProduct, VendureVariant, VendureAsset, VendureCollection } from '@/types/vendure';
 import { sendCAPIEvent, buildUserData, generateEventId } from '@/lib/meta-capi';
+import { getStoreConfig } from '@/lib/store-config';
 
+const storeConfig = await getStoreConfig(Astro.request);
 const { slug } = Astro.params;
 
 if (!slug) {
@@ -47,7 +49,7 @@ if (Astro.request.method === 'POST') {
             content_type: 'product',
             currency: 'PLN',
           },
-        });
+        }, storeConfig.metaDatasetId);
       }
 
       return redirectWithToken('/koszyk', result.authToken);
@@ -95,7 +97,7 @@ if (product) {
         value: vcFirstVariant ? vcFirstVariant.priceWithTax / 100 : 0,
         currency: 'PLN',
       },
-    });
+    }, storeConfig.metaDatasetId);
   }
 }
 

@@ -56,7 +56,7 @@ if (hasConsent && config.metaPixelId) {
     event_source_url: Astro.url.href,
     action_source: 'website',
     user_data: userData,
-  });
+  }, config.metaDatasetId);
 }
 ---
 

@@ -3,8 +3,8 @@
  * Sends events to Meta's Graph API v24.0 for server-side tracking.
  *
  * IMPORTANT: CAPI Access Token must NEVER be exposed to the client.
- * Token comes from Channel custom field (metaCapiAccessToken, public: false)
- * or fallback env var META_CAPI_ACCESS_TOKEN.
+ * Token comes from env var META_CAPI_ACCESS_TOKEN (server-side only in Astro SSR).
+ * Dataset ID comes from Channel custom field (metaDatasetId) with env var fallback.
  */
 
 const GRAPH_API_VERSION = 'v24.0';
@@ -146,13 +146,15 @@ export async function buildUserData(request: Request, pii?: PII): Promise<CAPIUs
 // ─── CAPI config resolution ─────────────────────────────────────────
 
 /**
- * Get CAPI config: tries Channel custom fields first, falls back to env vars.
+ * Get CAPI config.
+ * - datasetId: Channel custom field (metaDatasetId) → env var fallback
+ * - accessToken: env var only (metaCapiAccessToken is public:false, not available via Shop API)
+ *
  * Returns null if no config available (pixel not configured for this channel).
  */
-export function getCAPIConfig(): CAPIConfig | null {
-  // Env var fallback (until Channel custom fields are deployed)
+export function getCAPIConfig(channelDatasetId?: string | null): CAPIConfig | null {
   const token = (import.meta.env.META_CAPI_ACCESS_TOKEN || '').trim();
-  const datasetId = (import.meta.env.META_DATASET_ID || '').trim();
+  const datasetId = channelDatasetId?.trim() || (import.meta.env.META_DATASET_ID || '').trim();
 
   if (!token || !datasetId) return null;
 
@@ -167,10 +169,10 @@ export function getCAPIConfig(): CAPIConfig | null {
  * Silently fails if credentials are not configured.
  *
  * @param event - The CAPI event to send
- * @param config - Optional CAPI config override (token + datasetId)
+ * @param channelDatasetId - Optional datasetId from Channel custom fields (takes priority over env var)
  */
-export function sendCAPIEvent(event: CAPIEvent, config?: CAPIConfig | null): void {
-  const capiConfig = config ?? getCAPIConfig();
+export function sendCAPIEvent(event: CAPIEvent, channelDatasetId?: string | null): void {
+  const capiConfig = getCAPIConfig(channelDatasetId);
   if (!capiConfig) return;
 
   // Fire-and-forget: do NOT await

@@ -7,6 +7,7 @@ import {
 } from '@/lib/vendure-api';
 import { isRateLimited } from '@/lib/rate-limit';
 import { sendCAPIEvent, buildUserData, generateEventId } from '@/lib/meta-capi';
+import { getStoreConfig } from '@/lib/store-config';
 
 const GET_ACTIVE_ORDER = `query { activeOrder { ${ORDER_FRAGMENT} } }`;
 
@@ -24,7 +25,7 @@ export const GET: APIRoute = async ({ request }) => {
     const { data, newToken } = await vendureQuery(GET_ACTIVE_ORDER, {}, token);
     return buildResponse({ order: data?.activeOrder || null }, newToken);
   } catch (e: any) {
-    return new Response(JSON.stringify({ error: e.message, stack: e.stack?.split('\n').slice(0, 3) }), {
+    return new Response(JSON.stringify({ error: 'Internal server error' }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' },
     });
@@ -69,6 +70,8 @@ export const POST: APIRoute = async ({ request }) => {
       // CAPI: AddToCart — consent-gated
       const cookies = request.headers.get('cookie') || '';
       if (cookies.includes('cookie_consent=accepted')) {
+        const storeConfig = await getStoreConfig(request);
+        const addedLine = result.lines?.find((l: any) => l.productVariant?.id === variantId);
         const userData = await buildUserData(request);
         sendCAPIEvent({
           event_name: 'AddToCart',
@@ -78,11 +81,12 @@ export const POST: APIRoute = async ({ request }) => {
           action_source: 'website',
           user_data: userData,
           custom_data: {
-            content_ids: [variantId],
+            content_ids: [addedLine?.productVariant?.sku || variantId],
             content_type: 'product',
+            value: addedLine ? addedLine.unitPriceWithTax / 100 : 0,
             currency: 'PLN',
           },
-        });
+        }, storeConfig.metaDatasetId);
       }
       return buildResponse({ order: result }, newToken);
     }
