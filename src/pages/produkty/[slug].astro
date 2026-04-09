@@ -73,24 +73,26 @@ if (!product && !error) {
 }
 
 // CAPI: ViewContent (server-side) — consent-gated
+// viewContentEventId is shared with browser pixel for deduplication (defined below, used in both)
+const viewContentEventId = generateEventId();
 if (product) {
   const vcCookies = Astro.request.headers.get('cookie') || '';
   const vcHasConsent = vcCookies.includes('cookie_consent=accepted');
   if (vcHasConsent) {
     const vcUserData = await buildUserData(Astro.request);
-    const firstVariant = product.variants?.[0];
+    const vcFirstVariant = product.variants?.[0];
     sendCAPIEvent({
       event_name: 'ViewContent',
       event_time: Math.floor(Date.now() / 1000),
-      event_id: generateEventId(),
+      event_id: viewContentEventId,
       event_source_url: Astro.url.href,
       action_source: 'website',
       user_data: vcUserData,
       custom_data: {
-        content_ids: [firstVariant?.sku || product.id],
+        content_ids: [vcFirstVariant?.sku || product.id],
         content_name: product.name,
         content_type: 'product',
-        value: firstVariant ? firstVariant.priceWithTax / 100 : 0,
+        value: vcFirstVariant ? vcFirstVariant.priceWithTax / 100 : 0,
         currency: 'PLN',
       },
     });
@@ -156,8 +158,7 @@ const omnibusFormatted = showOmnibus
   ? new Intl.NumberFormat('pl-PL', { style: 'currency', currency: 'PLN' }).format(lowestPrice30d / 100)
   : '';
 
-// ViewContent event data for browser pixel
-const viewContentEventId = crypto.randomUUID();
+// ViewContent event data for browser pixel (viewContentEventId generated above for dedup)
 const firstVariant = product?.variants?.[0];
 ---
 
@@ -403,7 +404,7 @@ const firstVariant = product?.variants?.[0];
       define:vars={{
         vcEventId: viewContentEventId,
         vcContentName: product.name,
-        vcContentIds: [firstVariant.id],
+        vcContentIds: [firstVariant.sku || firstVariant.id],
         vcValue: lowestPrice / 100,
       }}
     >

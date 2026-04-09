@@ -43,6 +43,8 @@ const ogImageUrl = ogImage ? (ogImage.startsWith('http') ? ogImage : `${siteUrl}
 const freeShippingThreshold = config.freeShippingThreshold;
 
 // CAPI: PageView (server-side) — consent-gated
+// eventId shared with browser pixel for deduplication
+const pageViewEventId = generateEventId();
 const cookies = Astro.request.headers.get('cookie') || '';
 const hasConsent = cookies.includes('cookie_consent=accepted');
 if (hasConsent && config.metaPixelId) {
@@ -50,7 +52,7 @@ if (hasConsent && config.metaPixelId) {
   sendCAPIEvent({
     event_name: 'PageView',
     event_time: Math.floor(Date.now() / 1000),
-    event_id: generateEventId(),
+    event_id: pageViewEventId,
     event_source_url: Astro.url.href,
     action_source: 'website',
     user_data: userData,
@@ -98,7 +100,7 @@ if (hasConsent && config.metaPixelId) {
     <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" /></noscript>
 
     <!-- Meta Pixel (consent-gated, ID from Channel config) -->
-    <MetaPixel pixelId={config.metaPixelId} />
+    <MetaPixel pixelId={config.metaPixelId} pageViewEventId={pageViewEventId} />
 
     <!-- Extra head content -->
     <slot name="head" />
